@@ -17,6 +17,7 @@ get_first_tac(TaPerEnB, Overlap, OverlapGroupSize, EnbId) ->
     EnbOffset = EnbId - 1, %% EnBStart = 1
     1 + (EnbOffset div OverlapGroupSize) * NbrTacPerOverlappingGroup + (EnbOffset rem OverlapGroupSize) * (TaPerEnB - Overlap). %% TaStart
 %% get Tac
+%% get Tac
 get_tac(TaStart, NbrOfTa) ->
     get_tac_help(TaStart, TaStart + NbrOfTa -1, []).
     
