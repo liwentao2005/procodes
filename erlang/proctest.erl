@@ -62,3 +62,17 @@ start_proc(Hostname) ->
                     14
             end            
         end.
+
+get_config_value(Key) ->
+    case {false , key, true} ->
+        {false, true, true} ->
+            1
+        _ ->
+            ok
+    end,
+    case {ok, Key} of
+        {ok, ok} ->
+            2
+        {error, ok} ->
+            no
+    end.

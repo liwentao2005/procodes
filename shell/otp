@@ -1,0 +1,244 @@
+#!/bin/bash
+
+###############################################################################
+# otp        This starts and stops otp.
+#
+#
+# Due to problem with hp-snmp-agent script
+# the Dallas boots scripts are moved from 99 to 86
+# so that start is performed before the hp-snmp-agent
+#
+# chkconfig: 35 86 86
+# description: otp
+###############################################################################
+
+
+###############################################################################
+# Source Function Library
+###############################################################################
+
+. /etc/rc.d/init.d/functions
+. /usr/bin/ltslib
+. /etc/sysconfig/otp
+
+
+###############################################################################
+# Global Variables Definition
+###############################################################################
+[ -z "$HOME" ] && export HOME=/
+
+if [ -z "$DALLAS_ERLANG_OTP_DIR" ]; then
+    ROOTDIR=/usr/local/lib/erlang
+else
+    ROOTDIR=$DALLAS_ERLANG_OTP_DIR
+fi
+
+if [ -z "$DALLAS_MAX_ERLANG_OTP_PROC" ]; then
+    MAX_OTP_PROC=1000000
+else
+    MAX_OTP_PROC=$DALLAS_MAX_ERLANG_OTP_PROC
+fi
+
+STARTBIN=$ROOTDIR/bin/run_erl
+RELDIR=$ROOTDIR/releases
+START_ERL_DATA=$RELDIR/start_erl.data
+PGREP_PATTERN='.*beam.*-sname dallas.*'
+
+###############################################################################
+# Exported Environment Variables
+###############################################################################
+
+export TERM=vt100
+export RUN_ERL_LOG_GENERATIONS=10
+export RUN_ERL_LOG_MAXSIZE=1000000
+
+
+###############################################################################
+# Functions Definition
+###############################################################################
+
+#==============================================================================
+# In case of centrally installed Erl/OTP the NFS mount could be slow
+# thus this function will check MAX number of times if ERL/OTP is available
+#==============================================================================
+check_start_bin()
+{
+    typeset MAX_TRIES=5
+    typeset COUNT=0
+
+    until [ -f $STARTBIN ]
+    do
+        if [ $COUNT -eq $MAX_TRIES ]; then
+            logger -s "Can't find $STARTBIN"
+            exit 1
+        fi
+        COUNT=$((COUNT + 1))
+        sleep 5
+    done
+}
+
+#==============================================================================
+# Start Erlang/OTP
+#==============================================================================
+start_otp()
+{
+    typeset I=$1
+    shift
+
+    taskset -c "$@"
+
+    # We have seen that erlang may crash (or override eachothers pipes)
+    # when several instances are started immediately after one another, so
+    # we wait until its pipes exist.
+    typeset COUNT=0
+    typeset PIPE_IDX=$((I + 1))
+    until [ -e /tmp/erlang.pipe.${PIPE_IDX}.r -a -e /tmp/erlang.pipe.${PIPE_IDX}.w ]
+    do
+        COUNT=$((COUNT + 1))
+        [ $COUNT -eq 100 ] && return 1
+        sleep 0.1
+    done
+
+    return 0
+}
+
+#==============================================================================
+# Stop Erlang/OTP by killing all beam proccess and wait for them to die
+#==============================================================================
+stop_otp()
+{
+    typeset MAX_TRIES=100
+    typeset COUNT=0
+
+    # Kill and wait for all beams to die...
+    while pkill -x -f "$PGREP_PATTERN" >/dev/null
+    do
+        COUNT=$((COUNT + 1))
+        [ $COUNT -eq $MAX_TRIES ] && return 1
+        sleep 0.1
+    done
+
+    return 0
+}
+
+
+#==============================================================================
+# Start Erlang/OTP.
+#==============================================================================
+start()
+{
+    typeset SUT=$(ShowConf sut)
+    [ "$SUT" = "SGSN" -o "$SUT" = "MME" ] && ulimit -n 8192
+
+    # Remove all pipes
+    rm -f /tmp/erlang.pipe.*
+
+    # Increase maximum number of ports Erlang can use
+    export ERL_MAX_PORTS=32768
+
+    # Start Erlang shell and set the processes to particular cores
+    typeset CORE_COUNT=$(ShowConf count processor)
+
+    # Get what utilization mode we start OTP (half or full)
+    typeset MODE=$(ShowConf mode)
+
+    typeset RETVAL=0
+    typeset CORE_ID
+    typeset I
+
+    if [ "$MODE" = "full" ] ; then
+        CORE_ID=0
+        CPU_STEP=1
+    else
+        CORE_ID=1
+        CPU_STEP=2
+    fi
+
+    for ((I=0; I<$MAX_INSTANCE_NUMBER; CORE_ID=(CORE_ID+CPU_STEP)%CORE_COUNT, I++))
+    do
+        # Flags to erl (see ERTS Reference Manual)
+        typeset ERL_FLAGS="-sname dallas$I $HIDDEN -kernel net_ticktime 480 -setcookie DALLAS -pa $DALLAS_BEAM_PATH -smp disable +A 4 +Bi +P $MAX_OTP_PROC +K true"
+        typeset LOGDIR=/var/log/erlang$I
+        [ -d $LOGDIR ] || mkdir -p $LOGDIR
+
+        # Start Erlang shell
+        action $"Starting erlang $I @ Core $CORE_ID:" start_otp $I $CORE_ID $STARTBIN -daemon /tmp/ $LOGDIR "exec $ROOTDIR/bin/start_erl $ROOTDIR $RELDIR $START_ERL_DATA $ERL_FLAGS"
+        if [ $? -eq 0 ]; then
+            logger "Dallas Erlang/OTP started succefully. Instance: $I"
+        else
+            logger "Dallas Erlang/OTP failed to start. Instance: $I"
+            RETVAL=1
+        fi
+    done
+
+    return $RETVAL
+}
+
+#==============================================================================
+# Stop Erlang/OTP.
+#==============================================================================
+stop()
+{
+    typeset RETVAL=0
+
+    action $"Stopping all erlang instances: " stop_otp
+
+    if [ $? -eq 0 ]; then
+        logger "Dallas Erlang/OTP stopped succefully."
+    else
+        logger "Dallas Erlang/OTP failed to stop."
+        RETVAL=1
+    fi
+
+    # Remove all pipes
+    rm -f /tmp/erlang.pipe.*
+
+    return $RETVAL
+}
+
+#==============================================================================
+# Check status of Erlang/OTP.
+#==============================================================================
+status()
+{
+    typeset ALL_ALIVE=true
+
+    if [ $(pgrep -x -f "$PGREP_PATTERN" | wc -l) -ne $MAX_INSTANCE_NUMBER ]; then
+        ALL_ALIVE=false
+    fi
+
+    action $"Status of all Dallas Erlang/OTP instances: " $ALL_ALIVE
+}
+
+
+###############################################################################
+# Main Entry
+###############################################################################
+
+RETVAL=0
+check_start_bin
+
+case "$1" in
+    start)
+        start
+        RETVAL=$?
+        ;;
+    stop)
+        stop
+        RETVAL=$?
+        ;;
+    restart)
+        stop
+        start
+        RETVAL=$?
+        ;;
+    status)
+        status
+        RETVAL=$?
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|status}"
+        RETVAL=1
+esac
+
+exit $RETVAL
