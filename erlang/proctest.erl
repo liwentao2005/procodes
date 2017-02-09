@@ -1,5 +1,6 @@
 -module(proctest).
 -export([start_proc/1, get_first_tac/4, get_tac/2, tac/0, tac/4]).
+-export([get_config_value/1]).
 
 %% ----------------------------
 tac() ->
@@ -64,15 +65,19 @@ start_proc(Hostname) ->
         end.
 
 get_config_value(Key) ->
-    case {false , key, true} ->
+    case {false , key, true} of
         {false, true, true} ->
-            1
+            io:format("1~w~n", [Key]),
+            1;
         _ ->
+            io:format("2~w~n", [Key]),
             ok
     end,
     case {ok, Key} of
-        {ok, ok} ->
-            2
-        {error, ok} ->
+        {ok, true} ->
+            io:format("3~w~n", [Key]),
+            2;
+        {ok, false} ->
+            io:format("4~w~n", [Key]),
             no
     end.

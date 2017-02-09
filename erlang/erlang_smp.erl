@@ -7,8 +7,11 @@
 
 start_proc(Num) ->
     case Num =:= 0 of
-        true -> ok;
-        false -> spawn(func() -> loop() end), start_proc(Num - 1)
+        true ->
+            ok;
+        false ->
+            spawn(fun() -> loop() end),
+            start_proc(Num - 1)
     end.
 
 loop() ->
