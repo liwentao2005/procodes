@@ -1,3 +1,4 @@
+// ubuntu add sctp mode:atp-get install libsctp-dev lksctp-tools
 #include "server.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -22,7 +23,8 @@ void SctpServer::listenSocket(void)
     inet_pton(AF_INET, "127.0.0.1", &serverAddr_.sin_addr);
 
     // bind address
-    bind(sockFd_, (struct sockaddr*)&serverAddr_, sizeof(serverAddr_));
+    int ret = bind(sockFd_, (struct sockaddr*)&serverAddr_, sizeof(serverAddr_));
+    printf("bind ret: %d.\n", ret);
 
     // set sctp notification event
     bzero(&events_, sizeof(events_));
@@ -39,16 +41,18 @@ void SctpServer::loop(void)
     {
         len_ = sizeof(struct sockaddr_in);
 
-        readSize_ = sctp_recvmsg(sockFd_,readBuf_,BUFFER_SIZE,
-                    (struct sockaddr *)&clientAddr_,&len_,&sri_,&msgFlags_);
+        readSize_ = sctp_recvmsg(sockFd_, readBuf_, BUFFER_SIZE,
+                    (struct sockaddr *)&clientAddr_, &len_, &sri_, &msgFlags_);
+        
+        printf("recv: %s.\n", readBuf_);
 
         if(streamIncrement_)
         {
             sri_.sinfo_stream++;
         }
-        sctp_sendmsg(sockFd_,readBuf_,readSize_,
-                        (struct sockaddr *)&clientAddr_,len_,
-                        sri_.sinfo_ppid,sri_.sinfo_flags,sri_.sinfo_stream,0,0);
+        sctp_sendmsg(sockFd_, readBuf_, readSize_,
+                        (struct sockaddr *)&clientAddr_, len_,
+                        sri_.sinfo_ppid, sri_.sinfo_flags, sri_.sinfo_stream, 0, 0);
     }
 }
 

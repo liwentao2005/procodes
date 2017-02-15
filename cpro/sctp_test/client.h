@@ -59,7 +59,7 @@ class SctpClient
         int echoToAll_;
 };
 
-//循环发送并接受消息
+//loop to send and recv msg
 void sctpstr_cli(FILE *fp,int sock_fd,struct sockaddr *to,socklen_t tolen)
 {
     struct sockaddr_in peeraddr;
@@ -81,13 +81,13 @@ void sctpstr_cli(FILE *fp,int sock_fd,struct sockaddr *to,socklen_t tolen)
         sri.sinfo_stream = sendline[1] - '0';
         out_sz = strlen(sendline);
 
-        //发送消息
+        // send msg
         int count = sctp_sendmsg(sock_fd,sendline,out_sz,to,tolen,0,0,sri.sinfo_stream,0,0);
         len = sizeof(peeraddr);
         rd_sz = sctp_recvmsg(sock_fd,recvline,sizeof(recvline),
                              (struct sockaddr *)&peeraddr,&len,&sri,&msg_flags);
         printf("From str:%d seq:%d (assoc:0x%x):",
-                sri.sinfo_stream,sri.sinfo_ssn,(u_int)sri.sinfo_assoc_id);
-        printf("%d  %s\n",rd_sz,recvline);
+                sri.sinfo_stream, sri.sinfo_ssn, (u_int)sri.sinfo_assoc_id);
+        printf("%d  %s.\n", rd_sz, recvline);
     }
 }

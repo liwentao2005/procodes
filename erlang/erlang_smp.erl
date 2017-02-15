@@ -1,5 +1,5 @@
 %%%
-%%% mpstat -PALL 2 10
+%%% mpstat -P ALL 2 10
 %%%
 
 -module(erlang_smp).

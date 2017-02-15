@@ -1,7 +1,6 @@
 all: server client
 server: server.o main.o
 	g++ $^ -o $@ -lsctp
-	rm -rf *.o
 
 server.o: server.cpp
 	g++ -c $< -o $@
