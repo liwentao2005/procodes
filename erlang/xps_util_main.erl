@@ -19,18 +19,14 @@ search(_Key, _String) ->
 
 search([], _String, Result) ->
     Result;
-
 search(_Key, [], Result) ->
     Result;
-
 search(Key, String, Result) ->
     case do_match(Key, String) of
         true ->
-            [_K|StringLeft] = String,
-            search(Key, StringLeft, Result + 1);
+            search(Key, tl(String), Result + 1);
         false ->
-            [_K|StringLeft] = String,
-            search(Key, StringLeft, Result)
+            search(Key, tl(String), Result)
     end.
 
 %%%
@@ -47,14 +43,9 @@ do_match([], _) ->
     true;
 do_match(_, []) ->
     false;
-do_match([], []) ->
-    false;
-do_match(Key, String) ->
-    [K1|KeyLeft] = Key,
-    [S1|StringLeft] = String,
-    case K1 == S1 of
+do_match([K1|Key], [S1|String]) ->
+    if K1 == S1 ->
+            do_match(Key, String);
         true ->
-            do_match(KeyLeft, StringLeft);
-        false ->
             false
     end.
