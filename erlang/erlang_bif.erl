@@ -1,7 +1,9 @@
-#!/usr/bin/env escript
+%!/usr/bin/env escript
 -module(erlang_bif).
 
 -export([test/0]).
+
+-include("system_functions.hrl").
 
 test() ->
     erlang:append_element({one, two, tst}, good),
@@ -15,5 +17,7 @@ test() ->
     %% Host = www
     [Host|_] = string:tokens("www.google.com", "."),
     io:format("[Host|_] = string:tokens(\"www.google.com\", \".\"). Host = ~p~n", [Host]),
+    ?ci_var(mv, "hello"),
+    io:format("co_var:~p~n",[?co_var(mv)]),
     ok.
 
