@@ -1,0 +1,38 @@
+/*
+ * How to compile asn file
+ * asn1ct:compile("People", [ber]). 
+ * 
+ * How to use asn function
+ *  'People': encode(<Type name>, <Value>)
+ *  or
+ *  'People': decode(<Type name>, <Value>)
+ 
+ *  examlpe:
+
+ *  receive
+ *      {Port, {data,Bytes}} ->
+ *          case 'People':decode('People',Bytes) of
+ *              {ok,P} ->
+ *                  {ok,Answer} = 'People':encode('Person',mk_answer(P)),
+ *                  Port ! {self(),{command,Answer}};
+ *              {error,Reason} ->
+ *                  exit({error,Reason})
+ *          end
+ *      end,
+
+ *  2> Rockstar = {'Person',"Some Name",roving,50}.
+ *  3> {ok,Bin} = 'People':encode('Person',Rockstar).
+ *  4> {ok,Person} = 'People':decode('Person',Bin).
+ 
+ */
+
+People DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+  Person ::= SEQUENCE {
+    name PrintableString,
+    location INTEGER {homne(0), field(1), roving(2)},
+    age INTEGER OPTIONAL
+  }
+END
+
+
