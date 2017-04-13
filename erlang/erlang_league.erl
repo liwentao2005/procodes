@@ -4,7 +4,7 @@
 -export([exchange/2, exchange_help/1]).
 -export([fibonacci/4]).
 
--include("erlang_hacking.hrl").
+-include("system_md.hrl").
 
 exchange_int(Total, Elements) ->
     exchange_int(Total, [], Elements).
@@ -56,14 +56,14 @@ fibonacci(First, Second, N, Accuracy)
         0 -> input_error;
         1 -> First;
         2 -> Second;
-        _ -> fibonacci(First, Second, 0, N-2, Accuracy, 0)
+        _ -> fibonacci_int(First, Second, N-2, Accuracy, First + Second)
     end;
 fibonacci(_First, _Second, _N, _Accuracy) ->
     input_error.
 
-fibonacci(First, Second, M, N, Accuracy, Result) ->
-    case N == M of 
+fibonacci_int(First, Second, N, Accuracy, Result) ->
+    case N == 0 of 
         true -> Result;
-        _ -> fibonacci(Second, First+Second, M+1, N, Accuracy, First+Second)
+        _ -> fibonacci_int(Second, First+Second, N-1, Accuracy, First+Second)
     end.
 
