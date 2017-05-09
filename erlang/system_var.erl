@@ -3,10 +3,18 @@
 
 -export([co_var/3,ci_var/4]).
 
-co_var(Key, _Module, _Var) ->
+co_var(Key, Module, _Var) ->
     case get(Key) of
         undefined ->
-            original_data;
+            case is_module_initialized(Module) of
+                true ->
+                    io:format("~w~n", ["co_var error!"]),
+                    error;
+                _ ->
+                    %% run_bind_module_date(Module),
+                    %% co_var(Key,Module,Var)
+                    origin
+            end;
         {checked_out, _} ->
             error;
         MV ->
@@ -24,3 +32,11 @@ ci_var(Key, _Module, _Var, MV) ->
             error
     end,
     ok.
+
+is_module_initialized(Module) ->
+    case get(module_initialized) of
+        undefined ->
+            false;
+        L ->
+            lists:member(Module, L)
+    end.

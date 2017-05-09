@@ -16,7 +16,7 @@ test() ->
     setelement(2, {10, old, element, position}, new),
     %% Host = www
     [Host|_] = string:tokens("www.google.com", "."),
-    io:format("[Host|_] = string:tokens(\"www.google.com\", \".\"). Host = ~p~n", [Host]),
+    io:format("[Host|_] = string:tokens(\"www.google.com\", \".\"). Host = ~p,?ModuleString:~p~n", [Host,?MODULE_STRING]),
     ?ci_var(mv, "hello"),
     io:format("co_var:~p~n",[?co_var(mv)]),
     ok.
