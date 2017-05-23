@@ -1,0 +1,8 @@
+Meeting Rules:
+
+Don't report only to scrum master, report to the team.
+Listen to other team members.
+Prepare before the meeting. You should know what you did since the last meeting, what you plan to do, what’s the remaining hours and what impediments you met.
+Keep it short and concise.
+Do problem solving and technical discussion after the meeting.
+Don't be late.
