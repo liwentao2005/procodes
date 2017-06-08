@@ -29,6 +29,7 @@ func (client *CenterClient)RemovePlayer(name string) error {
 	if ret.Code == "200" {
 		return nil
 	}
+
 	return errors.New(ret.Code)
 }
 
@@ -38,6 +39,7 @@ func (client *CenterClient)ListPlayer(params string)(ps []*Player, err error) {
 		err = errors.New(resp.Code)
 		return
 	}
+
 	err = json.Unmarshal([]byte(resp.Body), &ps)
 	return
 }

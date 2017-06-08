@@ -11,12 +11,13 @@ import (
 var _ ipc.Server = &CenterServer{} // confirm 
 
 type Message struct {
-    Form    string "from"
+    From    string "from"
     To      string "to"
     Content string "content"
 }
 
 type Room struct {
+
 }
 
 type CenterServer struct {

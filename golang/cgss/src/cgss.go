@@ -23,15 +23,15 @@ func startCenterService() error {
 }
 func Help(args []string) int {
 	fmt.Println(`
-		Commands:
-			login <username> <level> <exp>
-			logout <username>
-			send <message>
-			listplayer(lp)
-			quit(q)
-			help(h)
-		`)
-		return 0
+	Commands:
+		login <username> <level> <exp>
+		logout <username>
+		send <message>
+		listplayer(lp)
+		quit(q)
+		help(h)
+	`)
+	return 0
 }
 
 func Quit(args []string) int {
@@ -85,11 +85,12 @@ func ListPlayer(args []string) int {
 		fmt.Println("Failed. ", err)
 	} else {
 		for i, v := range ps {
-		fmt.Println(i + 1, ":", v)
+		    fmt.Println(i + 1, ":", v)
+	    }
 	}
-	}
-	return 0
-	}
+	
+    return 0
+}
 
 func Send(args []string) int {
 
@@ -123,7 +124,6 @@ func main() {
 	startCenterService()
 
 	Help(nil)
-
 	r := bufio.NewReader(os.Stdin)
 	handlers := GetCommandHandlers()
 	
