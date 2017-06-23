@@ -1,4 +1,4 @@
 #! /bin/bash
 
-export GOPATH=/home/wentao/proj/procodes/golang/go_toposort
+export GOPATH=`pwd`
 export PATH=$PATH:$GOPATH/bin
