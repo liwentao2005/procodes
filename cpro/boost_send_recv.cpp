@@ -14,7 +14,7 @@
 #define DLT_BYTES_TO_WORD(x0, x1) (uint16_t((x1) << 8 | (x0)))
 #define DLT_BYTES_TO_LONG(x0, x1, x2, x3) (uint32_t((x3) << 24 | (x2) << 16 | (x1) << 8 | (x0)))
 
-#if 0
+#if 1
 static char* remote_address = "10.0.2.15";
 static char* local_address = "192.168.1.12";
 #else
@@ -27,7 +27,13 @@ class Dlt
 public:
     Dlt():
         work_(std::make_shared<boost::asio::io_service::work>(io_)),
-        io_thread_ (&Dlt::io_run, this) {}
+        io_thread_ (&Dlt::io_run, this) {
+            boost::asio::ip::udp::endpoint local_ep(boost::asio::ip::address_v4::from_string("10.0.2.15"), 8087);
+            udp_socket = new boost::asio::ip::udp::socket(io_, local_ep);
+            //    boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 8087));
+            udp_socket->set_option(boost::asio::socket_base::reuse_address(true));
+            udp_socket->set_option(boost::asio::socket_base::linger(true, 0));
+        }
 
     ~Dlt()
     {
@@ -137,11 +143,13 @@ public:
 
     void startRunning() {
 
+#if 0
         boost::asio::ip::udp::endpoint local_ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 8087);
         boost::asio::ip::udp::socket udp_socket(io_, local_ep);
         //    boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 8087));
         udp_socket.set_option(boost::asio::socket_base::reuse_address(true));
         udp_socket.set_option(boost::asio::socket_base::linger(true, 0));
+#endif
 
         std::thread receive_thread([&]() {
             std::atomic<bool> keep_receiving(true);
@@ -165,7 +173,7 @@ public:
             };
 
             receive = [&]() {
-                udp_socket.async_receive(boost::asio::buffer(receive_buffer, receive_buffer.capacity()), receive_cbk);
+                udp_socket->async_receive(boost::asio::buffer(receive_buffer, receive_buffer.capacity()), receive_cbk);
             };
 
             receive();
@@ -197,13 +205,15 @@ public:
             std::cout << "-----send thread:" << boost::this_thread::get_id() << std::endl;
 #if 0
             for (int var = 0; var < 3; ++var) {
-                udp_socket.send_to(boost::asio::buffer(its_subscribe_message), target_sd);
+                udp_socket->send_to(boost::asio::buffer(its_subscribe_message), target_sd);
                 ++its_subscribe_message[8];
             }
 #else
             while (true) {
                 getchar();
-                udp_socket.send_to(boost::asio::buffer(its_subscribe_message), target_sd);
+
+                test_caseA();
+                //udp_socket->send_to(boost::asio::buffer(its_subscribe_message), target_sd);
                 ++its_subscribe_message[8];
             }
 #endif
@@ -225,9 +235,28 @@ public:
         io_.run();
     }
 
+    void test_caseA() {
+            std::uint8_t test_message[] = {
+                0x01, 0x08, 0x00, 0x00, // [0]messageTpye, errorCode, R, R
+                0x11, 0x00, 0x00, 0x00, // [4]Action ID
+                0x01, 0x00, 0x00, 0x00, // [8]Cmd ID
+                0x02, 0x01, 0x00, 0x00, // [12]Target,startStop,Priority,R
+                0x57, 0x57, 0x57, 0x00, // [16]Expiry 8 bytes
+                0x57, 0x57, 0x57, 0x00,
+                0x02, 0x00, 0x04, 0x00, // [24]payload length & Frequency
+                0x03, 0x00, 0x12, 0x00, // [28]payload signal3, 16s
+                0x05, 0x00, 0x18, 0x00  // [32]payload signal5, 24s
+            };
+        boost::asio::ip::udp::socket::endpoint_type target_sd(
+            boost::asio::ip::address::from_string(std::string(remote_address)), 8087);
+        std::cout << "-----send thread:" << boost::this_thread::get_id() << std::endl;
+            udp_socket->send_to(boost::asio::buffer(test_message), target_sd);
+    }
+
     boost::asio::io_service io_;
     std::shared_ptr<boost::asio::io_service::work> work_;
     std::thread io_thread_;
+    boost::asio::ip::udp::socket *udp_socket;
 };
 
 int main() {
